@@ -2,7 +2,7 @@
 
 # ssfpm - Shit Simple File and Package Manager
 # By Nicklas Rudolfsson
-# Fork of fzfm and made just for fun when I have time for it.
+# Fork of fzfm - just for fun when I have time for it.
 # ------> WORK IN PROGRESS - SOME THINGS MIGHT WORK AND SOME NOT!!! <------
 
 # Dependencies:
