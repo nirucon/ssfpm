@@ -3,7 +3,7 @@
 # ssfpm - Shit Simple File and Package Manager
 # By Nicklas Rudolfsson
 # Fork of fzfm and made just for fun when I have time for it.
-# WORK IN PROGRESS!!!
+# ------> WORK IN PROGRESS - SOME THINGS MIGHT WORK AND SOME NOT!!! <------
 
 # Dependencies:
 # - lsd
@@ -24,8 +24,8 @@ CONFIG_DIR="$HOME/.config/ssfpm"
 CONFIG_FILE="$CONFIG_DIR/ssfpm.conf"
 
 # Ensure the temporary and config directories exist
-mkdir -p $TEMP_DIR
-mkdir -p $CONFIG_DIR
+mkdir -p "$TEMP_DIR"
+mkdir -p "$CONFIG_DIR"
 
 # Load or set default text editor
 if [[ -f "$CONFIG_FILE" ]]; then
@@ -50,37 +50,38 @@ check_dependencies() {
     fi
 
     echo "ssfpm needs some dependencies for all features to work. You are missing: ${missing_deps[*]}"
-    read -rp "Do you want to install them now? (y/n): " install_choice
-    if [[ "$install_choice" != "y" ]]; then
-        exit 1
-    fi
-
-    local os_release_file="/etc/os-release"
-    if [[ -f "$os_release_file" ]]; then
-        source "$os_release_file"
-    else
-        echo "Cannot determine the Linux distribution. Please install the missing dependencies manually."
-        exit 1
-    fi
-
-    case "$ID" in
-        arch|manjaro|endeavouros|arcolinux|garuda)
-            sudo pacman -Sy --noconfirm "${missing_deps[@]}"
-            ;;
-        debian|ubuntu|linuxmint)
-            sudo apt update && sudo apt install -y "${missing_deps[@]}"
-            ;;
-        fedora)
-            sudo dnf install -y "${missing_deps[@]}"
-            ;;
-        void)
-            sudo xbps-install -Sy "${missing_deps[@]}"
-            ;;
-        *)
-            echo "Unsupported Linux distribution. Please install the missing dependencies manually."
+    read -rp "Do you want to install them now? (Y/n): " install_choice
+    install_choice=${install_choice:-Y}
+    if [[ "$install_choice" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+        local os_release_file="/etc/os-release"
+        if [[ -f "$os_release_file" ]]; then
+            source "$os_release_file"
+        else
+            echo "Cannot determine the Linux distribution. Please install the missing dependencies manually."
             exit 1
-            ;;
-    esac
+        fi
+
+        case "$ID" in
+            arch|manjaro|endeavouros|arcolinux|garuda)
+                sudo pacman -Sy --noconfirm "${missing_deps[@]}"
+                ;;
+            debian|ubuntu|linuxmint)
+                sudo apt update && sudo apt install -y "${missing_deps[@]}"
+                ;;
+            fedora)
+                sudo dnf install -y "${missing_deps[@]}"
+                ;;
+            void)
+                sudo xbps-install -Sy "${missing_deps[@]}"
+                ;;
+            *)
+                echo "Unsupported Linux distribution. Please install the missing dependencies manually."
+                exit 1
+                ;;
+        esac
+    else
+        exit 1
+    fi
 }
 
 # Function to search and install packages
@@ -161,19 +162,19 @@ sspm() {
 ssfpm() {
     while true; do
         selection="$(lsd -a -1 | fzf \
-            --bind "left:pos(2)+accept" \
-            --bind "right:accept" \
-            --bind "shift-up:preview-up" \
-            --bind "shift-down:preview-down" \
-            --bind "ctrl-d:execute(create_dir)+reload(lsd -a -1)" \
-            --bind "ctrl-f:execute(create_file)+reload(lsd -a -1)" \
-            --bind "ctrl-t:execute(trash {+})+reload(lsd -a -1)" \
-            --bind "ctrl-c:execute(copy_function {} $TEMP_DIR/$(basename {}).copy)" \
-            --bind "ctrl-m:execute(move_function {} $TEMP_DIR/$(basename {}).copy)+reload(lsd -a -1)" \
-            --bind "ctrl-g:execute(move_function $TEMP_DIR/* . && rm -rf $TEMP_DIR/*)+reload(lsd -a -1)" \
-            --bind "ctrl-p:execute(sspm)+reload(lsd -a -1)" \
-            --bind "esc:execute(rm -rf $TEMP_DIR/*)+abort" \
-            --bind "space:toggle" \
+            --bind 'left:pos(2)+accept' \
+            --bind 'right:accept' \
+            --bind 'shift-up:preview-up' \
+            --bind 'shift-down:preview-down' \
+            --bind 'ctrl-d:execute(create_dir)+reload(lsd -a -1)' \
+            --bind 'ctrl-f:execute(create_file)+reload(lsd -a -1)' \
+            --bind 'ctrl-t:execute(trash {+})+reload(lsd -a -1)' \
+            --bind 'ctrl-c:execute(copy_function {} $TEMP_DIR/$(basename {}).copy)' \
+            --bind 'ctrl-m:execute(move_function {} $TEMP_DIR/$(basename {}).copy)+reload(lsd -a -1)' \
+            --bind 'ctrl-g:execute(move_function $TEMP_DIR/* . && rm -rf $TEMP_DIR/*)+reload(lsd -a -1)' \
+            --bind 'ctrl-p:execute(sspm)+reload(lsd -a -1)' \
+            --bind 'esc:execute(rm -rf $TEMP_DIR/*)+abort' \
+            --bind 'space:toggle' \
             --color=fg:#d0d0d0,fg+:#d0d0d0,bg+:#262626 \
             --color=hl:#5f87af,hl+:#487caf,info:#afaf87,marker:#274a37 \
             --color=pointer:#a62b2b,spinner:#af5fff,prompt:#876253,header:#87afaf \
@@ -183,7 +184,7 @@ ssfpm() {
             --multi \
             --info inline-right \
             --prompt "Search files: " \
-            --header "SSFPM - Shit Simple File and Package Manager" \
+            --header "SSFPM - Shit Simple File and Package Manager | Search files (left) | Search packages (ctrl+p)" \
             --header-first \
             --border "bold" \
             --border-label "$(pwd)/" \
@@ -196,11 +197,11 @@ ssfpm() {
                         bat --style=numbers --theme=ansi --color=always $sel 2>/dev/null
                     else
                         chafa -c full --color-space rgb --dither none -p on -w 9 2>/dev/null {}
-                        fi')" \
+                    fi')"
         if [[ "$selection" == "ssfpm-options" ]]; then
             ssfpm_options
         elif [[ -d ${selection} ]]; then
-            >/dev/null cd "${selection}"
+            cd "${selection}" || return
         elif [[ -f "${selection}" ]]; then
             file_type=$(file -b --mime-type "${selection}" | cut -d'/' -f1)
             case $file_type in
